@@ -2,6 +2,7 @@ import numpy as np
 import logging
 import scipy.io as sio
 import random
+from sklearn.decomposition import PCA
 import torch
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 HYPER_GENE = 0.7
@@ -81,6 +82,33 @@ def build_graph(features: np.ndarray, type: str="BRCA_gene", method: str='corr',
     logging.info("Saved adjacency matrix for %s to %s", type, f_name + f'{type}_matrix.mat')
     return z
     
+def build_new_graph(features: np.ndarray, type: str="BRCA_gene", method: str='corr', f_name: str='./data2/', weight=0.3, n_components: float=0.97):
+    features = StandardScaler().fit_transform(features)
+    pca = PCA(n_components=n_components)
+    pca_features = pca.fit_transform(features)
+    if method == 'corr':
+        z = abs(corr_x_y(features, features))
+        z_pca =  abs(corr_x_y(pca_features, pca_features))
+        logging.info("Correlation matrix shape: %s", z_pca.shape)
+    elif method == 'cos':
+        z = cos_similarity(features, features)
+        z_pca = cos_similarity(pca_features, pca_features)
+        logging.info("Cosine similarity matrix shape: %s", z_pca.shape)
+    elif method == 'euclidean':
+        z = euclidean_similarity(features, features)
+        z_pca = euclidean_similarity(pca_features, pca_features)
+        logging.info("Euclidean similarity matrix shape: %s", z_pca.shape)
+    elif method == 'mahalanobis':
+        z = mahalanobis_similarity(features, features)
+        z_pca = mahalanobis_similarity(pca_features, pca_features)
+        logging.info("Mahalanobis similarity matrix shape: %s", z_pca.shape)
+    else:
+        raise ValueError("Unknown method: %s" % method)
+    HYPER = HYPER_GENE if type == "BRCA_gene" else (HYPER_METHY if type == "BRCA_methy" else HYPER_MIRNA)
+    normalize_z = np.where((weight * z_pca + (1 - weight) * z) > HYPER, 1, 0)
+    sio.savemat(f_name + f'{type}_matrix.mat', {'normalize_corr': normalize_z})
+    logging.info("Saved adjacency matrix for %s to %s", type, f_name + f'{type}_matrix.mat')
+    return z_pca
 
 def set_seed(seed=1234):
     random.seed(seed)
@@ -113,6 +141,6 @@ def load_edges(file_path, node_dict):
     return edge_index
 if __name__ == '__main__':
     features1, features2, features3, labels, indexes = load_data()
-    build_graph(features1, type="BRCA_gene", method='corr')
-    build_graph(features2, type="BRCA_methy", method='corr')
-    build_graph(features3, type="BRCA_mirna", method='corr')
+    build_new_graph(features1, type="BRCA_gene", method='corr')
+    build_new_graph(features2, type="BRCA_methy", method='corr')
+    build_new_graph(features3, type="BRCA_mirna", method='corr')
