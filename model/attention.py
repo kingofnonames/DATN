@@ -10,18 +10,26 @@ import torch.nn.functional as F
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..utils import set_seed
-
-set_seed(1234)
 
 class OmicsAttention(nn.Module):
+    """
+    Feature-level attention for omics data.
+
+    Input:
+        x: (B, N)
+
+    Output:
+        rep:  (B, P)
+        attn: (B, N)
+    """
 
     def __init__(
         self,
         n_features,
         n_embedding=128,
-        n_proj=128,
-        dropout=0.3
+        n_proj=64,
+        attn_hidden=64,
+        dropout=0.2
     ):
         super().__init__()
 
@@ -32,47 +40,38 @@ class OmicsAttention(nn.Module):
         self.emb = nn.Parameter(
             torch.empty(n_features, n_embedding)
         )
-
         nn.init.xavier_uniform_(self.emb)
         self.fx = nn.Sequential(
             nn.Linear(n_embedding, n_proj),
             nn.LayerNorm(n_proj),
-            nn.SiLU(),
+            nn.Tanh(),
             nn.Dropout(dropout)
         )
-        hidden_attn = n_proj // 2
-
         self.attn_net = nn.Sequential(
-            nn.Linear(n_proj, hidden_attn),
-            nn.LayerNorm(hidden_attn),
-            nn.SiLU(),
+            nn.Linear(n_embedding, attn_hidden),
+            nn.Tanh(),
             nn.Dropout(dropout),
-
-            nn.Linear(hidden_attn, 1)
+            nn.Linear(attn_hidden, 1)
         )
-        self.gate = nn.Parameter(torch.tensor(0.1))
 
     def forward(self, x):
         """
         x: (B, N)
-
-        return:
-            rep  : (B, n_proj)
-            attn : (B, N)
         """
+
         B, N = x.shape
-        assert N == self.n_features
-        emb = self.emb.unsqueeze(0)          # (1, N, E)
 
-        fe = x.unsqueeze(-1) * emb           # (B, N, E)
-        fx = self.fx(fe)                     # (B, N, P)
-        attn_logits = self.attn_net(fx).squeeze(-1)   # (B, N)
-        attn = torch.softmax(attn_logits, dim=1)
-        rep = torch.sum(
-            attn.unsqueeze(-1) * fx,
-            dim=1
-        )                                     # (B, P)
+        assert N == self.n_features, (
+            f"Expected {self.n_features} features, got {N}"
+        )
 
-        global_feat = fx.mean(dim=1)
-        rep = rep + self.gate * global_feat
+        # emb: (1, N, E)
+        emb = self.emb.unsqueeze(0)
+
+        fe = x.unsqueeze(-1) * emb
+        fx = self.fx(fe)
+        logits = self.attn_net(fe).squeeze(-1)
+        attn = torch.softmax(logits, dim=1)
+        rep = (attn.unsqueeze(-1) * fx).sum(dim=1)
+
         return rep, attn

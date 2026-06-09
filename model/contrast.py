@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-from ..utils import set_seed
-set_seed(1234)
+
 class Contrast(nn.Module):
     def __init__(self, hidden_dim, tau=0.5, lam=0.5):
         super().__init__()

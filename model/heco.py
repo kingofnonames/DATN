@@ -96,4 +96,4 @@ class HeCo(nn.Module):
 
         z = z_ge + z_mp + z_sc
 
-        return z.cpu().numpy()
+        return z.detach().cpu().numpy()
