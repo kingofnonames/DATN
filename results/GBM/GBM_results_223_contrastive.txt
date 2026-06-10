@@ -1,0 +1,23 @@
+Fold 0 | Precision: 0.8604 | Recall: 0.7883 | F1 Score: 0.8151 | F1 Score (Weighted): 0.8029 | ACC: 0.8000 | ARI: 0.4684 | MCC: 0.7242 | AUC: 0.8821 | PR AUC: 0.7943 | DBI: 0.7653 | SS: 0.3412
+Fold 1 | Precision: 0.8558 | Recall: 0.9375 | F1 Score: 0.8710 | F1 Score (Weighted): 0.9218 | ACC: 0.9200 | ARI: 0.8050 | MCC: 0.8825 | AUC: 0.9632 | PR AUC: 0.9217 | DBI: 0.5356 | SS: 0.5589
+Fold 2 | Precision: 0.7667 | Recall: 0.7833 | F1 Score: 0.7689 | F1 Score (Weighted): 0.8085 | ACC: 0.8000 | ARI: 0.5983 | MCC: 0.7326 | AUC: 0.9856 | PR AUC: 0.9614 | DBI: 0.6120 | SS: 0.4014
+Fold 3 | Precision: 0.8500 | Recall: 0.8773 | F1 Score: 0.8185 | F1 Score (Weighted): 0.8948 | ACC: 0.8800 | ARI: 0.8003 | MCC: 0.8435 | AUC: 0.9947 | PR AUC: 0.9851 | DBI: 0.8080 | SS: 0.4241
+Fold 4 | Precision: 0.7857 | Recall: 0.7545 | F1 Score: 0.7163 | F1 Score (Weighted): 0.7600 | ACC: 0.7600 | ARI: 0.5057 | MCC: 0.6886 | AUC: 0.9147 | PR AUC: 0.8536 | DBI: 0.7079 | SS: 0.3214
+Fold 5 | Precision: 0.8472 | Recall: 0.8264 | F1 Score: 0.7948 | F1 Score (Weighted): 0.8021 | ACC: 0.8000 | ARI: 0.5350 | MCC: 0.7584 | AUC: 0.9664 | PR AUC: 0.9324 | DBI: 0.6068 | SS: 0.4690
+Fold 6 | Precision: 0.5464 | Recall: 0.6091 | F1 Score: 0.5709 | F1 Score (Weighted): 0.6748 | ACC: 0.7200 | ARI: 0.4113 | MCC: 0.6121 | AUC: 0.9488 | PR AUC: 0.8748 | DBI: 0.7521 | SS: 0.3861
+Fold 7 | Precision: 0.8958 | Recall: 0.8667 | F1 Score: 0.8657 | F1 Score (Weighted): 0.8829 | ACC: 0.8800 | ARI: 0.6965 | MCC: 0.8294 | AUC: 0.9787 | PR AUC: 0.9544 | DBI: 0.7993 | SS: 0.3619
+Fold 8 | Precision: 0.5687 | Recall: 0.6146 | F1 Score: 0.5855 | F1 Score (Weighted): 0.7113 | ACC: 0.7500 | ARI: 0.4720 | MCC: 0.6486 | AUC: 0.9306 | PR AUC: 0.8320 | DBI: 0.7869 | SS: 0.4163
+Fold 9 | Precision: 0.6736 | Recall: 0.6455 | F1 Score: 0.6434 | F1 Score (Weighted): 0.6877 | ACC: 0.7083 | ARI: 0.4007 | MCC: 0.6008 | AUC: 0.9450 | PR AUC: 0.8726 | DBI: 0.8306 | SS: 0.2807
+Final Result | Precision: 0.7650 � 0.1198 | Recall: 0.7703 � 0.1088 | F1 Score: 0.7450 � 0.1052 | F1 Score (Weighted): 0.7947 � 0.0826 | ACC: 0.8018 � 0.0679 | ARI: 0.5693 � 0.1429 | MCC: 0.7321 � 0.0926 | AUC: 0.9510 � 0.0328 | PR AUC: 0.8982 � 0.0590 | DBI: 0.7204 � 0.0962 | SS: 0.3961 � 0.0750
+(Percentile Graph)
+Fold 0 | Precision: 0.8604 | Recall: 0.7883 | F1 Score: 0.8151 | F1 Score (Weighted): 0.8029 | ACC: 0.8000 | ARI: 0.4684 | MCC: 0.7242 | AUC: 0.9360 | PR AUC: 0.8278 | DBI: 0.7601 | SS: 0.4057
+Fold 1 | Precision: 0.8558 | Recall: 0.9375 | F1 Score: 0.8710 | F1 Score (Weighted): 0.9218 | ACC: 0.9200 | ARI: 0.8050 | MCC: 0.8825 | AUC: 0.9424 | PR AUC: 0.8953 | DBI: 0.5232 | SS: 0.5806
+Fold 2 | Precision: 0.7667 | Recall: 0.7833 | F1 Score: 0.7689 | F1 Score (Weighted): 0.8085 | ACC: 0.8000 | ARI: 0.5983 | MCC: 0.7326 | AUC: 0.9765 | PR AUC: 0.9431 | DBI: 0.5771 | SS: 0.4268
+Fold 3 | Precision: 0.9167 | Recall: 0.9500 | F1 Score: 0.9222 | F1 Score (Weighted): 0.9618 | ACC: 0.9600 | ARI: 0.9511 | MCC: 0.9439 | AUC: 0.9936 | PR AUC: 0.9832 | DBI: 0.6357 | SS: 0.4443
+Fold 4 | Precision: 0.8095 | Recall: 0.8045 | F1 Score: 0.7761 | F1 Score (Weighted): 0.8078 | ACC: 0.8000 | ARI: 0.5671 | MCC: 0.7388 | AUC: 0.8928 | PR AUC: 0.8442 | DBI: 0.7418 | SS: 0.3883
+Fold 5 | Precision: 0.8234 | Recall: 0.8264 | F1 Score: 0.7981 | F1 Score (Weighted): 0.7947 | ACC: 0.8000 | ARI: 0.5487 | MCC: 0.7439 | AUC: 0.9675 | PR AUC: 0.9263 | DBI: 0.6310 | SS: 0.4571
+Fold 6 | Precision: 0.5382 | Recall: 0.6171 | F1 Score: 0.5730 | F1 Score (Weighted): 0.6754 | ACC: 0.7200 | ARI: 0.3967 | MCC: 0.6125 | AUC: 0.9349 | PR AUC: 0.8529 | DBI: 0.7808 | SS: 0.4306
+Fold 7 | Precision: 0.8958 | Recall: 0.8667 | F1 Score: 0.8657 | F1 Score (Weighted): 0.8829 | ACC: 0.8800 | ARI: 0.6965 | MCC: 0.8294 | AUC: 0.9733 | PR AUC: 0.9475 | DBI: 0.8168 | SS: 0.4137
+Fold 8 | Precision: 0.5958 | Recall: 0.6458 | F1 Score: 0.6181 | F1 Score (Weighted): 0.7546 | ACC: 0.7917 | ARI: 0.5442 | MCC: 0.7047 | AUC: 0.9578 | PR AUC: 0.8973 | DBI: 0.7949 | SS: 0.4181
+Fold 9 | Precision: 0.7812 | Recall: 0.7705 | F1 Score: 0.7729 | F1 Score (Weighted): 0.7889 | ACC: 0.7917 | ARI: 0.5147 | MCC: 0.7160 | AUC: 0.9416 | PR AUC: 0.8795 | DBI: 0.8415 | SS: 0.3103
+Final Result | Precision: 0.7844 � 0.1181 | Recall: 0.7990 � 0.1025 | F1 Score: 0.7781 � 0.1033 | F1 Score (Weighted): 0.8199 � 0.0786 | ACC: 0.8263 � 0.0678 | ARI: 0.6091 � 0.1570 | MCC: 0.7628 � 0.0911 | AUC: 0.9516 � 0.0270 | PR AUC: 0.8997 � 0.0477 | DBI: 0.7103 � 0.1043 | SS: 0.4275 � 0.0637

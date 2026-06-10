@@ -1,0 +1,11 @@
+Fold 0 | Precision: 0.7882 | Recall: 0.7695 | F1 Score: 0.7745 | F1 Weighted Score: 0.7951 | ACC: 0.7931 | ARI: 0.5582 | MCC: 0.7221 | AUC: 0.9255 | PR AUC: 0.8210 | DBI: 0.7165 | SS: 0.4358
+Fold 1 | Precision: 0.8875 | Recall: 0.9167 | F1 Score: 0.8929 | F1 Weighted Score: 0.8951 | ACC: 0.8966 | ARI: 0.7225 | MCC: 0.8591 | AUC: 0.9897 | PR AUC: 0.9733 | DBI: 0.9796 | SS: 0.3438
+Fold 2 | Precision: 0.8601 | Recall: 0.8095 | F1 Score: 0.8209 | F1 Weighted Score: 0.8241 | ACC: 0.8276 | ARI: 0.5710 | MCC: 0.7744 | AUC: 0.9786 | PR AUC: 0.9484 | DBI: 0.8616 | SS: 0.3615
+Fold 3 | Precision: 0.8194 | Recall: 0.7917 | F1 Score: 0.7921 | F1 Weighted Score: 0.8218 | ACC: 0.8276 | ARI: 0.6065 | MCC: 0.7674 | AUC: 0.9659 | PR AUC: 0.9137 | DBI: 0.7242 | SS: 0.2577
+Fold 4 | Precision: 0.9028 | Recall: 0.9083 | F1 Score: 0.8955 | F1 Weighted Score: 0.8934 | ACC: 0.8929 | ARI: 0.6938 | MCC: 0.8629 | AUC: 0.9804 | PR AUC: 0.9516 | DBI: 0.6925 | SS: 0.4392
+Fold 5 | Precision: 0.8369 | Recall: 0.8175 | F1 Score: 0.8195 | F1 Weighted Score: 0.8224 | ACC: 0.8214 | ARI: 0.5445 | MCC: 0.7630 | AUC: 0.9477 | PR AUC: 0.9068 | DBI: 0.8277 | SS: 0.3075
+Fold 6 | Precision: 0.9416 | Recall: 0.8889 | F1 Score: 0.9042 | F1 Weighted Score: 0.9262 | ACC: 0.9286 | ARI: 0.8255 | MCC: 0.9022 | AUC: 0.9932 | PR AUC: 0.9810 | DBI: 0.6038 | SS: 0.4795
+Fold 7 | Precision: 0.6766 | Recall: 0.6479 | F1 Score: 0.6368 | F1 Weighted Score: 0.6622 | ACC: 0.6429 | ARI: 0.2742 | MCC: 0.5431 | AUC: 0.9213 | PR AUC: 0.8307 | DBI: 1.0553 | SS: 0.2275
+Fold 8 | Precision: 0.7302 | Recall: 0.7812 | F1 Score: 0.7021 | F1 Weighted Score: 0.7116 | ACC: 0.7143 | ARI: 0.3492 | MCC: 0.6481 | AUC: 0.9230 | PR AUC: 0.8320 | DBI: 0.8339 | SS: 0.3781
+Fold 9 | Precision: 0.8097 | Recall: 0.8389 | F1 Score: 0.8172 | F1 Weighted Score: 0.8191 | ACC: 0.8214 | ARI: 0.5454 | MCC: 0.7536 | AUC: 0.9549 | PR AUC: 0.8903 | DBI: 0.7457 | SS: 0.4355
+Final Result | Precision: 0.8253 � 0.0759 | Recall: 0.8170 � 0.0753 | F1 Score: 0.8056 � 0.0815 | F1 (Weighted): 0.8171 � 0.0771 | ACC: 0.8166 � 0.0814 | ARI: 0.5691 � 0.1558 | MCC: 0.7596 � 0.1010 | AUC: 0.9580 � 0.0264 | PR AUC: 0.9049 � 0.0572 | DBI: 0.8041 � 0.1299 | SS: 0.3666 � 0.0793
