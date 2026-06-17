@@ -8,14 +8,14 @@ import random
 import os
 import logging
 import scipy.io as sio
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, precision_score, recall_score
 from sklearn.preprocessing import label_binarize
 from sklearn import metrics
 
 cuda = True if torch.cuda.is_available() else False
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).parent.resolve()
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
@@ -134,15 +134,15 @@ def set_seed(seed=1234):
     torch.cuda.manual_seed_all(seed)
 
 
-def load_brca_data(data_path):
+def load_data(data_path, data_type="GBM"):
     data = sio.loadmat(data_path)
 
-    features1 = data['BRCA_Gene_Expression'].T
-    features2 = data['BRCA_Methy_Expression'].T
-    features3 = data['BRCA_Mirna_Expression'].T
+    features1 = data[f'{data_type}_Gene_Expression'].T
+    features2 = data[f'{data_type}_Methy_Expression'].T
+    features3 = data[f'{data_type}_Mirna_Expression'].T
 
-    labels = data['BRCA_clinicalMatrix'].reshape(-1)
-    indexes = data['BRCA_indexes'].flatten()
+    labels = data[f'{data_type}_clinicalMatrix'].reshape(-1)
+    indexes = data[f'{data_type}_indexes'].flatten()
 
     logging.info("Shape of Gene Expression: %s", features1.shape)
     logging.info("Shape of Methylation Expression: %s", features2.shape)
@@ -261,7 +261,7 @@ def gen_test_adj_mat_tensor(data, trte_idx, parameter, metric="cosine"):
     return adj
 
 
-def prepare_trte_data_from_arrays(feature_list, labels, tr_idx, te_idx):
+def prepare_trte_data_from_arrays(feature_list, labels, tr_idx, te_idx, normalize=True):
     """
     Thay thế cho prepare_trte_data (đọc từ csv). Ở đây nhận trực tiếp các mảng
     features (đã load từ BRCA.mat) và chỉ số train/test của 1 fold.
@@ -269,30 +269,39 @@ def prepare_trte_data_from_arrays(feature_list, labels, tr_idx, te_idx):
     num_view = len(feature_list)
     num_tr = len(tr_idx)
     num_te = len(te_idx)
-
     data_mat_list = []
     for i in range(num_view):
-        data_mat_list.append(np.concatenate((feature_list[i][tr_idx], feature_list[i][te_idx]), axis=0))
+        feat_tr = feature_list[i][tr_idx]
+        feat_te = feature_list[i][te_idx]
+
+        if normalize:
+            # Fit min-max trên TRAIN, áp dụng cho cả train và test để tránh leak
+            min_val = feat_tr.min(axis=0, keepdims=True)
+            max_val = feat_tr.max(axis=0, keepdims=True)
+            denom = max_val - min_val
+            denom[denom == 0] = 1.0  # tránh chia 0 cho feature hằng số
+
+            feat_tr = (feat_tr - min_val) / denom
+            feat_te = (feat_te - min_val) / denom
+            feat_te = np.clip(feat_te, 0.0, 1.0)  # test có thể vượt range train
+
+        data_mat_list.append(np.concatenate((feat_tr, feat_te), axis=0))
 
     data_tensor_list = []
     for i in range(len(data_mat_list)):
         data_tensor_list.append(torch.FloatTensor(data_mat_list[i]))
         if cuda:
             data_tensor_list[i] = data_tensor_list[i].cuda()
-
     idx_dict = {}
     idx_dict["tr"] = list(range(num_tr))
     idx_dict["te"] = list(range(num_tr, num_tr + num_te))
-
     data_train_list = []
     data_all_list = []
     for i in range(len(data_tensor_list)):
         data_train_list.append(data_tensor_list[i][idx_dict["tr"]].clone())
         data_all_list.append(torch.cat((data_tensor_list[i][idx_dict["tr"]].clone(),
                                          data_tensor_list[i][idx_dict["te"]].clone()), 0))
-
     labels_trte = np.concatenate((labels[tr_idx], labels[te_idx]))
-
     return data_train_list, data_all_list, idx_dict, labels_trte
 
 
@@ -390,6 +399,8 @@ def compute_metrics(y_true, y_prob, num_class):
     except Exception:
         prauc_val = float('nan')
 
+    # DBI và SS cần embedding + cluster label; ở đây dùng xác suất dự đoán làm embedding
+    # và nhãn dự đoán làm cluster label (chỉ tính được khi có >= 2 cụm khác nhau xuất hiện)
     try:
         if len(np.unique(y_pred)) >= 2:
             dbi = metrics.davies_bouldin_score(y_prob, y_pred)
@@ -485,6 +496,7 @@ def run_kfold_for_seed(seed, feature_list, labels, num_class,
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     log_file = os.path.join(log_dir, f"seed_{seed}_kfold{k}.log")
 
+    # reset file log cho seed này
     with open(log_file, "w") as f:
         f.write(f"==== Seed: {seed} | KFold: {k} ====\n")
 
@@ -508,6 +520,7 @@ def run_kfold_for_seed(seed, feature_list, labels, num_class,
         for key in metric_keys:
             all_results[key].append(result[key])
 
+    # tổng hợp kết quả cuối file log
     summary_msg = "\n========== FINAL (Seed %d) ==========\n" % seed
     for key in metric_keys:
         summary_msg += "%s: %.4f ± %.4f\n" % (key.upper(), np.mean(all_results[key]), np.std(all_results[key]))
@@ -522,12 +535,12 @@ def run_kfold_for_seed(seed, feature_list, labels, num_class,
 SEEDS = [223, 777, 2026]
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parent
-    data_folder = 'BRCA'
-    num_class = 5
+    BASE_DIR = "/mogonet/results"
+    data_folder = 'LGG'
+    num_class = 3
 
-    adj_parameter = 10
-    dim_he_list = [400, 400, 200]
+    adj_parameter = 2
+    dim_he_list = [200, 200, 100]
 
     num_view = 3
     dim_hvcdn = pow(num_class, num_view)
@@ -541,7 +554,7 @@ if __name__ == "__main__":
     K = 10
     LOG_DIR = "logs"
 
-    features1, features2, features3, labels, indexes = load_brca_data(BASE_DIR / "BRCA.mat")
+    features1, features2, features3, labels, indexes = load_data("LGG.mat", data_type="LGG")
     feature_list = [features1, features2, features3]
 
     for seed in SEEDS:
