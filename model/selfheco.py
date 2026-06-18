@@ -1,16 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .GCN_model import GCNModel, SimpleGCNModel
+from .GCN_model import GCNModel, SimpleGCNModel, GATModel
 from ..utils import set_seed
 
 class MultiContrastLoss(nn.Module):
-    def __init__(self, hidden_dim, tau=0.5, lam=0.5, weight=0.777, eps=1e-8):
+    def __init__(self, hidden_dim, tau=0.5, lam=0.5, weight=1.0, weight_decay=0, eps=1e-8):
         super().__init__()
         self.tau = tau
         self.lam = lam
         self.eps = eps
         self.weight = weight
+        self.weight_decay = weight_decay
         self.proj = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
@@ -53,7 +54,9 @@ class MultiContrastLoss(nn.Module):
         matrix_sc2ge = matrix_sc2ge / (torch.sum(matrix_sc2ge, dim=1).view(-1, 1) + self.eps)
         lori_sc_ge = -torch.log(matrix_sc2ge.mul(z_pos).sum(dim=-1)).mean()
         cross_loss = self.lam * lori_ge_mp + (1 - self.lam) * lori_mp_ge + self.lam * lori_ge_sc + (1 - self.lam) * lori_sc_ge
-        total_loss = self.weight * self_loss + (1 - self.weight) * cross_loss
+        # total_loss = self.weight * self_loss + (1 - self.weight) * cross_loss
+        total_loss = self_loss + self.weight_decay * cross_loss
+        # total_loss = self_loss
         # total_loss = self_loss + cross_loss
                                                  
         return total_loss
@@ -71,6 +74,9 @@ class MultiHeCo(nn.Module):
         self.ge = GCNModel(num_feature1, hidden_dim, output_dim, dropout)
         self.mp = GCNModel(num_feature2, hidden_dim, output_dim, dropout)
         self.sc = GCNModel(num_feature3, hidden_dim, output_dim, dropout)
+        # self.ge = GATModel(num_feature1, hidden_dim, output_dim, dropout)
+        # self.mp = GATModel(num_feature2, hidden_dim, output_dim, dropout)
+        # self.sc = GATModel(num_feature3, hidden_dim, output_dim, dropout)
 
         self.ge_projector = nn.Sequential(
             nn.Linear(output_dim, hidden_dim),

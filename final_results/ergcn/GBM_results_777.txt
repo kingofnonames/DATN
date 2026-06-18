@@ -1,0 +1,11 @@
+Fold 0 | Precision: 0.8250 | Recall: 0.8258 | F1 Score: 0.7929 | ACC: 0.7600 | ARI: 0.3744 | MCC: 0.7055 | AUC: 0.9413 | PR AUC: 0.8817 | DBI: 0.5057 | SS: 0.5933
+Fold 1 | Precision: 0.7792 | Recall: 0.7562 | F1 Score: 0.7569 | ACC: 0.7600 | ARI: 0.4417 | MCC: 0.6728 | AUC: 0.9099 | PR AUC: 0.8097 | DBI: 0.5454 | SS: 0.5710
+Fold 2 | Precision: 0.8452 | Recall: 0.7897 | F1 Score: 0.7973 | ACC: 0.8000 | ARI: 0.4934 | MCC: 0.7355 | AUC: 0.9403 | PR AUC: 0.9034 | DBI: 0.2966 | SS: 0.7625
+Fold 3 | Precision: 0.7540 | Recall: 0.7111 | F1 Score: 0.7176 | ACC: 0.7200 | ARI: 0.3484 | MCC: 0.6212 | AUC: 0.9237 | PR AUC: 0.8109 | DBI: 0.5742 | SS: 0.5623
+Fold 4 | Precision: 0.7310 | Recall: 0.8292 | F1 Score: 0.7583 | ACC: 0.8000 | ARI: 0.5406 | MCC: 0.7117 | AUC: 0.9605 | PR AUC: 0.9042 | DBI: 0.4410 | SS: 0.6302
+Fold 5 | Precision: 0.8973 | Recall: 0.8661 | F1 Score: 0.8762 | ACC: 0.8800 | ARI: 0.6864 | MCC: 0.8385 | AUC: 0.9888 | PR AUC: 0.9680 | DBI: 0.3457 | SS: 0.7105
+Fold 6 | Precision: 0.6474 | Recall: 0.6375 | F1 Score: 0.6387 | ACC: 0.8000 | ARI: 0.4771 | MCC: 0.6792 | AUC: 0.9536 | PR AUC: 0.9069 | DBI: 0.3278 | SS: 0.7597
+Fold 7 | Precision: 0.6966 | Recall: 0.7188 | F1 Score: 0.6756 | ACC: 0.6800 | ARI: 0.2611 | MCC: 0.5798 | AUC: 0.9040 | PR AUC: 0.7980 | DBI: 0.4502 | SS: 0.6285
+Fold 8 | Precision: 0.7542 | Recall: 0.7437 | F1 Score: 0.7165 | ACC: 0.7083 | ARI: 0.3440 | MCC: 0.6380 | AUC: 0.8385 | PR AUC: 0.7062 | DBI: 0.5510 | SS: 0.6019
+Fold 9 | Precision: 0.6354 | Recall: 0.6533 | F1 Score: 0.6405 | ACC: 0.6667 | ARI: 0.3295 | MCC: 0.5463 | AUC: 0.9172 | PR AUC: 0.8173 | DBI: 0.4707 | SS: 0.7157
+Final Result | Precision: 0.7565 � 0.0798 | Recall: 0.7531 � 0.0718 | F1 Score: 0.7371 � 0.0711 | ACC: 0.7575 � 0.0621 | ARI: 0.4297 � 0.1184 | MCC: 0.6728 � 0.0791 | AUC: 0.9278 � 0.0384 | PR AUC: 0.8506 � 0.0718 | DBI: 0.4508 � 0.0936 | SS: 0.6536 � 0.0727

@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 import scipy.io as sio
-import os
 import torch
 import torch.backends.cudnn as cudnn
 from sklearn import metrics, preprocessing
@@ -12,7 +11,7 @@ from sklearn.metrics import(
     accuracy_score,
     auc,
     precision_recall_curve,
-    matthews_corrcoef,
+    matthews_corrcoef
 )
 
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -21,9 +20,10 @@ from sklearn.preprocessing import label_binarize
 
 from torch_geometric.data import Data
 
-from .model.selfheco import MultiContrastLoss, MultiHeCo
-
-from .utils import set_seed, load_edges, load_weighted_edges
+from .model.heco import HeCo, HeCoAttention
+from .model.contrast import Contrast
+from .model.attention import OmicsAttention
+from .utils import set_seed, load_edges
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -32,12 +32,11 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 logging.info("Base directory: %s", BASE_DIR)
 
-# SEED = 777
+# SEED = 2026
 # if __name__ == '__main__':
 #     set_seed(SEED)
 #     # cudnn.benchmark = False
 #     # cudnn.deterministic = True
-#     # torch.use_deterministic_algorithms(True)
 #     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #     logging.info("Using device: %s", device)
 
@@ -59,21 +58,17 @@ logging.info("Base directory: %s", BASE_DIR)
 #     index_mirna_dict = {}
 
 #     for idx in indexes:
-#         idx = str(idx)
+#         idx = int(idx)
 
 #         index_gene_dict[idx] = len(index_gene_dict)
 #         index_methy_dict[idx] = len(index_methy_dict)
 #         index_mirna_dict[idx] = len(index_mirna_dict)
 
-#     path = BASE_DIR / "data2" / "PER_BRCA_"
+#     path = BASE_DIR / "data2" / "BRCA"
 
 #     cites1 = path / "edges_gene_brca.csv"
 #     cites2 = path / "edges_methy_brca.csv"
 #     cites3 = path / "edges_mirna_brca.csv"
-    
-#     # cites1 = path / "edges_gene_gbm.csv"
-#     # cites2 = path / "edges_methy_gbm.csv"
-#     # cites3 = path / "edges_mirna_gbm.csv"
 
 #     edge_gene_index = load_edges(cites1, index_gene_dict)
 #     edge_methy_index = load_edges(cites2, index_methy_dict)
@@ -119,7 +114,6 @@ logging.info("Base directory: %s", BASE_DIR)
 #     p_scores = []
 #     r_scores = []
 #     f1_scores = []
-#     f1_weighted_scores = []
 #     acc_scores = []
 #     ari_scores = []
 #     mcc_scores = []
@@ -128,7 +122,7 @@ logging.info("Base directory: %s", BASE_DIR)
 #     dbi_scores = []
 #     ss_scores = []
 
-#     result_path = BASE_DIR / f"final_BRCA_results_{SEED}_contrastive.txt"
+#     result_path = BASE_DIR / f"BRCA_results_{SEED}_baseline_120.txt"
 #     for fold, (train_mask, test_mask) in enumerate(kfold.split(mask)):
 
 #         logging.info("========== Fold %d ==========", fold)
@@ -138,7 +132,7 @@ logging.info("Base directory: %s", BASE_DIR)
 #             == y_train.unsqueeze(1)
 #         ).float().to(device)
 
-#         model = MultiHeCo(
+#         model = HeCo(
 #             features1.shape[1],
 #             features2.shape[1],
 #             features3.shape[1]
@@ -149,11 +143,12 @@ logging.info("Base directory: %s", BASE_DIR)
 #             lr=0.001,
 #             weight_decay=5e-4
 #         )
-#         criterion = MultiContrastLoss(
+#         criterion = Contrast(
 #             128,
+#             0.5,
 #             0.5
 #         ).to(device)
-#         for epoch in range(100):
+#         for epoch in range(120):
 
 #             model.train()
 
@@ -233,13 +228,7 @@ logging.info("Base directory: %s", BASE_DIR)
 #                 average='macro'
 #             )
 #         )
-#         f1_weighted_scores.append(
-#             f1_score(
-#                 targets_test,
-#                 y_pred,
-#                 average='weighted'
-#             )
-#         )
+
 #         acc_scores.append(
 #             accuracy_score(
 #                 targets_test,
@@ -304,7 +293,6 @@ logging.info("Base directory: %s", BASE_DIR)
 #         logging.info("Precision : %.4f", p_scores[-1])
 #         logging.info("Recall    : %.4f", r_scores[-1])
 #         logging.info("F1 Score  : %.4f", f1_scores[-1])
-#         logging.info("F1 Score (Weighted)  : %.4f", f1_weighted_scores[-1])
 #         logging.info("ACC       : %.4f", acc_scores[-1])
 #         logging.info("ARI       : %.4f", ari_scores[-1])
 #         logging.info("MCC       : %.4f", mcc_scores[-1])
@@ -314,13 +302,12 @@ logging.info("Base directory: %s", BASE_DIR)
 #         logging.info("SS        : %.4f", ss_scores[-1])
 #         with open(result_path, "a") as f:
 #             f.write(
-#                 "Fold %d | Precision: %.4f | Recall: %.4f | F1 Score: %.4f | F1 Score (Weighted): %.4f | ACC: %.4f | ARI: %.4f | MCC: %.4f | AUC: %.4f | PR AUC: %.4f | DBI: %.4f | SS: %.4f\n" %
+#                 "Fold %d | Precision: %.4f | Recall: %.4f | F1 Score: %.4f | ACC: %.4f | ARI: %.4f | MCC: %.4f | AUC: %.4f | PR AUC: %.4f | DBI: %.4f | SS: %.4f\n" %
 #                 (
 #                     fold,
 #                     p_scores[-1],
 #                     r_scores[-1],
 #                     f1_scores[-1],
-#                     f1_weighted_scores[-1],
 #                     acc_scores[-1],
 #                     ari_scores[-1],
 #                     mcc_scores[-1],
@@ -335,7 +322,6 @@ logging.info("Base directory: %s", BASE_DIR)
 #     logging.info("Precision : %.4f", np.mean(p_scores))
 #     logging.info("Recall    : %.4f", np.mean(r_scores))
 #     logging.info("F1 Score  : %.4f", np.mean(f1_scores))
-#     logging.info("F1 Score (Weighted)  : %.4f", np.mean(f1_weighted_scores))
 #     logging.info("ACC       : %.4f", np.mean(acc_scores))
 #     logging.info("ARI       : %.4f", np.mean(ari_scores))
 #     logging.info("MCC       : %.4f", np.mean(mcc_scores))
@@ -350,7 +336,6 @@ logging.info("Base directory: %s", BASE_DIR)
 #             "Precision: %.4f ± %.4f | "
 #             "Recall: %.4f ± %.4f | "
 #             "F1 Score: %.4f ± %.4f | "
-#             "F1 Score (Weighted): %.4f ± %.4f | "
 #             "ACC: %.4f ± %.4f | "
 #             "ARI: %.4f ± %.4f | "
 #             "MCC: %.4f ± %.4f | "
@@ -363,7 +348,6 @@ logging.info("Base directory: %s", BASE_DIR)
 #                 np.mean(p_scores), np.std(p_scores),
 #                 np.mean(r_scores), np.std(r_scores),
 #                 np.mean(f1_scores), np.std(f1_scores),
-#                 np.mean(f1_weighted_scores), np.std(f1_weighted_scores),
 #                 np.mean(acc_scores), np.std(acc_scores),
 #                 np.mean(ari_scores), np.std(ari_scores),
 #                 np.mean(mcc_scores), np.std(mcc_scores),
@@ -373,10 +357,13 @@ logging.info("Base directory: %s", BASE_DIR)
 #                 np.mean(ss_scores), np.std(ss_scores)
 #             )
 #         )
+
 SEEDS = [223, 777, 2026]
-if __name__ == "__main__":
+if __name__ == '__main__':
     for seed in SEEDS:
         set_seed(seed)
+        # cudnn.benchmark = False
+        # cudnn.deterministic = True
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logging.info("Using device: %s", device)
 
@@ -463,7 +450,7 @@ if __name__ == "__main__":
         dbi_scores = []
         ss_scores = []
 
-        result_path = BASE_DIR / f"final_results/sgcl/LGG/LGG_results_{seed}_contrastive.log"
+        result_path = BASE_DIR / f"final_results/mcrgcn/LGG/LGG_results_{seed}_baseline.log"
         with open (result_path, "a") as f:
             f.write("Precision | Recall | F1 Score | F1 Score (Weighted) | ACC | AUC | PR AUC | ARI | MCC | DBI | SS\n")
         for fold, (train_mask, test_mask) in enumerate(kfold.split(mask, labels.cpu().numpy())):
@@ -475,7 +462,7 @@ if __name__ == "__main__":
                 == y_train.unsqueeze(1)
             ).float().to(device)
 
-            model = MultiHeCo(
+            model = HeCo(
                 features1.shape[1],
                 features2.shape[1],
                 features3.shape[1]
@@ -486,11 +473,12 @@ if __name__ == "__main__":
                 lr=0.001,
                 weight_decay=5e-4
             )
-            criterion = MultiContrastLoss(
+            criterion = Contrast(
                 128,
+                0.5,
                 0.5
             ).to(device)
-            for epoch in range(100):
+            for epoch in range(120):
 
                 model.train()
 
@@ -570,6 +558,7 @@ if __name__ == "__main__":
                     average='macro'
                 )
             )
+
             f1_weighted_scores.append(
                 f1_score(
                     targets_test,
@@ -577,6 +566,7 @@ if __name__ == "__main__":
                     average='weighted'
                 )
             )
+
             acc_scores.append(
                 accuracy_score(
                     targets_test,
@@ -641,7 +631,7 @@ if __name__ == "__main__":
             logging.info("Precision : %.4f", p_scores[-1])
             logging.info("Recall    : %.4f", r_scores[-1])
             logging.info("F1 Score  : %.4f", f1_scores[-1])
-            logging.info("F1 Score (Weighted)  : %.4f", f1_weighted_scores[-1])
+            logging.info("F1 Weighted Score  : %.4f", f1_weighted_scores[-1])
             logging.info("ACC       : %.4f", acc_scores[-1])
             logging.info("ARI       : %.4f", ari_scores[-1])
             logging.info("MCC       : %.4f", mcc_scores[-1])
@@ -671,7 +661,7 @@ if __name__ == "__main__":
         logging.info("Precision : %.4f", np.mean(p_scores))
         logging.info("Recall    : %.4f", np.mean(r_scores))
         logging.info("F1 Score  : %.4f", np.mean(f1_scores))
-        logging.info("F1 Score (Weighted)  : %.4f", np.mean(f1_weighted_scores))
+        logging.info("F1 Weighted Score  : %.4f", np.mean(f1_weighted_scores))
         logging.info("ACC       : %.4f", np.mean(acc_scores))
         logging.info("ARI       : %.4f", np.mean(ari_scores))
         logging.info("MCC       : %.4f", np.mean(mcc_scores))
@@ -686,7 +676,7 @@ if __name__ == "__main__":
                 "Precision: %.4f ± %.4f | "
                 "Recall: %.4f ± %.4f | "
                 "F1 Score: %.4f ± %.4f | "
-                "F1 Score (Weighted): %.4f ± %.4f | "
+                "F1 (Weighted): %.4f ± %.4f | "
                 "ACC: %.4f ± %.4f | "
                 "ARI: %.4f ± %.4f | "
                 "MCC: %.4f ± %.4f | "
