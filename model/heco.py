@@ -26,7 +26,7 @@ class HeCoAttention(nn.Module):
 
         self.projector = nn.Sequential(
             nn.Linear(output_dim, hidden_dim),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(hidden_dim, output_dim)
         )
 

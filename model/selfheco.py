@@ -38,7 +38,11 @@ class MultiContrastLoss(nn.Module):
         matrix_sc2sc = self.sim(z_sc, z_sc)
         matrix_sc2sc = matrix_sc2sc / (torch.sum(matrix_sc2sc, dim=1).view(-1, 1) + self.eps)
         self_loss_sc = -torch.log(matrix_sc2sc.mul(z_pos).sum(dim=-1)).mean()
+        # self_loss = self_loss_mp + self_loss_sc
+        # self_loss = self_loss_ge + self_loss_sc
+        # self_loss = self_loss_ge + self_loss_mp
         self_loss = self_loss_mp + self_loss_sc + self_loss_ge
+
         # Contrastive Loss
 
         matrix_ge2mp = self.sim(z_proj_ge, z_proj_mp)
@@ -80,17 +84,17 @@ class MultiHeCo(nn.Module):
 
         self.ge_projector = nn.Sequential(
             nn.Linear(output_dim, hidden_dim),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(hidden_dim, output_dim)
         )
         self.mp_projector = nn.Sequential(
             nn.Linear(output_dim, hidden_dim),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(hidden_dim, output_dim)
         )
         self.sc_projector = nn.Sequential(
             nn.Linear(output_dim, hidden_dim),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(hidden_dim, output_dim)
         )
 
@@ -107,10 +111,57 @@ class MultiHeCo(nn.Module):
         return z_ge, z_mp, z_sc
     
     @torch.no_grad()
-    def get_embeds(self, data1, data2, data3):
+    def get_embeds(self, data1, data2, data3, alpha1=1.0, alpha2=1.0, alpha3=1.0):
         z_ge = self.encode(self.ge, self.ge_projector, data1)
         z_mp = self.encode(self.mp, self.mp_projector, data2)
         z_sc = self.encode(self.sc, self.sc_projector, data3)
 
-        z = (z_ge + z_mp + z_sc) / 3
+        # z = (alpha2 / (alpha2 + alpha3) * z_mp + alpha3 / (alpha2 + alpha3) * z_sc) 
+        # z = (alpha1 / (alpha1 + alpha3) * z_ge + alpha3 / (alpha1 + alpha3) * z_sc)
+        # z = (alpha1 / (alpha1 + alpha2) * z_ge + alpha2 / (alpha1 + alpha2) * z_mp)
+        z = ((alpha1) * z_ge + alpha2 * z_mp + alpha3 * z_sc) / (alpha1 + alpha2 + alpha3)
         return z.detach().cpu().numpy()
+
+
+class MultiHeCoWithoutContrastive(nn.Module):
+    def __init__(
+        self,
+        num_feature1, num_feature2, num_feature3,
+        hidden_dim=256, output_dim=128, dropout=0.3,
+        num_classes=4, hidden_dim1=60, hidden_dim2=30
+    ):
+        super().__init__()
+        self.ge = GCNModel(num_feature1, hidden_dim, output_dim, dropout)
+        self.mp = GCNModel(num_feature2, hidden_dim, output_dim, dropout)
+        self.sc = GCNModel(num_feature3, hidden_dim, output_dim, dropout)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(output_dim, hidden_dim1),
+            nn.ReLU(),
+            nn.Linear(hidden_dim1, hidden_dim2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim2, num_classes)
+        )
+        self.ge_projector = nn.Sequential(nn.Linear(output_dim, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, output_dim))
+        self.mp_projector = nn.Sequential(nn.Linear(output_dim, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, output_dim))
+        self.sc_projector = nn.Sequential(nn.Linear(output_dim, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, output_dim))
+
+    def encode(self, encoder, projector, data):
+        z = encoder(data)
+        z = projector(z)
+        return z
+
+    def forward(self, data1, data2, data3):
+        z_ge = self.encode(self.ge, self.ge_projector, data1)
+        z_mp = self.encode(self.mp, self.mp_projector, data2)
+        z_sc = self.encode(self.sc, self.sc_projector, data3)
+        z = (z_ge + z_mp + z_sc) / 3
+        return self.classifier(z)
+
+    @torch.no_grad()
+    def get_embeds(self, data1, data2, data3, alpha1=1.0, alpha2=1.0, alpha3=1.0):
+        z_ge = self.encode(self.ge, self.ge_projector, data1)
+        z_mp = self.encode(self.mp, self.mp_projector, data2)
+        z_sc = self.encode(self.sc, self.sc_projector, data3)
+        z = (alpha1 * z_ge + alpha2 * z_mp + alpha3 * z_sc) / (alpha1 + alpha2 + alpha3)
+        return z

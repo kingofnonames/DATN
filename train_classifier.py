@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from pathlib import Path
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn import preprocessing
 from sklearn.metrics import (
     precision_score,
@@ -37,18 +37,16 @@ if __name__ == "__main__":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logging.info("Using device: %s", device)
 
-        # ---------------- LOAD DATA ---------------- #
-        data = sio.loadmat(BASE_DIR / "BRCA.mat")
+        data = sio.loadmat(BASE_DIR / "GBM.mat")
 
-        features1 = preprocessing.scale(data['BRCA_Gene_Expression'].T)
-        features2 = preprocessing.scale(data['BRCA_Methy_Expression'].T)
-        features3 = preprocessing.scale(data['BRCA_Mirna_Expression'].T)
+        features1 = preprocessing.scale(data['GBM_Gene_Expression'].T)
+        features2 = preprocessing.scale(data['GBM_Methy_Expression'].T)
+        features3 = preprocessing.scale(data['GBM_Mirna_Expression'].T)
 
-        labels = torch.LongTensor(data['BRCA_clinicalMatrix'].reshape(-1))
+        labels = torch.LongTensor(data['GBM_clinicalMatrix'].reshape(-1))
 
-        indexes = data['BRCA_indexes'].flatten()
+        indexes = data['GBM_indexes'].flatten()
 
-        # mapping
         index_gene_dict = {}
         index_methy_dict = {}
         index_mirna_dict = {}
@@ -59,48 +57,40 @@ if __name__ == "__main__":
             index_methy_dict[idx] = len(index_methy_dict)
             index_mirna_dict[idx] = len(index_mirna_dict)
 
-        # edges
-        path = BASE_DIR / "data2" / "BRCA"
-        edge_gene_index = load_edges(path / "edges_gene_brca.csv", index_gene_dict)
-        edge_methy_index = load_edges(path / "edges_methy_brca.csv", index_methy_dict)
-        edge_mirna_index = load_edges(path / "edges_mirna_brca.csv", index_mirna_dict)
+        path = BASE_DIR / "data2" / "PER_GBM_"
+        edge_gene_index = load_edges(path / "edges_gene_gbm.csv", index_gene_dict)
+        edge_methy_index = load_edges(path / "edges_methy_gbm.csv", index_methy_dict)
+        edge_mirna_index = load_edges(path / "edges_mirna_gbm.csv", index_mirna_dict)
 
-        # tensors
         features1 = torch.FloatTensor(features1).to(device)
         features2 = torch.FloatTensor(features2).to(device)
         features3 = torch.FloatTensor(features3).to(device)
         labels = labels.to(device)
 
-        # graph data
         cora1 = Data(x=features1, edge_index=edge_gene_index, y=labels).to(device)
         cora2 = Data(x=features2, edge_index=edge_methy_index, y=labels).to(device)
         cora3 = Data(x=features3, edge_index=edge_mirna_index, y=labels).to(device)
 
-        # ---------------- MASK (UNCHANGED as requested) ---------------- #
         mask = torch.randperm(len(index_gene_dict))
 
-        # ---------------- KFOLD ---------------- #
-        kfold = KFold(
+        kfold = StratifiedKFold(
             n_splits=10,
             shuffle=True,
             random_state=seed
         )
 
-        # metrics
         p_scores, r_scores, f1_scores = [], [], []
         acc_scores, ari_scores, mcc_scores = [], [], []
 
-        result_path = BASE_DIR / f"BRCA_results_{seed}_classifier.txt"
+        result_path = BASE_DIR / f"final_results/classifier/GBM/GBM_results_{seed}_classifier.txt"
 
-        # ---------------- FOLD LOOP ---------------- #
-        for fold, (train_idx, test_idx) in enumerate(kfold.split(mask)):
+        for fold, (train_idx, test_idx) in enumerate(kfold.split(mask, labels[mask].cpu().numpy())):
 
             logging.info("========== Fold %d ==========", fold + 1)
 
             train_idx = torch.tensor(train_idx).to(device)
             test_idx = torch.tensor(test_idx).to(device)
 
-            # ---------------- PHASE 1: CONTRASTIVE ---------------- #
             model = MultiHeCo(
                 features1.shape[1],
                 features2.shape[1],
@@ -114,7 +104,7 @@ if __name__ == "__main__":
 
             pos = (y_train.unsqueeze(0) == y_train.unsqueeze(1)).float()
 
-            for epoch in range(80):
+            for epoch in range(100):
                 model.train()
                 optimizer1.zero_grad()
 
@@ -131,7 +121,6 @@ if __name__ == "__main__":
                 optimizer1.step()
                 logging.info("Epoch %d | Loss: %.4f", epoch + 1, loss.item())
 
-            # ---------------- EXTRACT EMBEDDINGS ---------------- #
             model.eval()
             with torch.no_grad():
                 z_ge, z_mp, z_sc = model(cora1, cora2, cora3)
@@ -140,8 +129,8 @@ if __name__ == "__main__":
             z_mp = z_mp.detach()
             z_sc = z_sc.detach()
 
-            # ---------------- PHASE 2: CLASSIFIER ---------------- #
             model_classifier = MultiClassifier(
+                input_dim=z_ge.shape[1],
                 n_classes=len(torch.unique(labels))
             ).to(device)
 
@@ -155,11 +144,11 @@ if __name__ == "__main__":
 
             y_train = cora1.y[train_idx]
 
-            for epoch in range(50):
+            for epoch in range(300):
                 model_classifier.train()
                 optimizer2.zero_grad()
 
-                out = model_classifier(
+                out, _ = model_classifier(
                     z_ge[train_idx],
                     z_mp[train_idx],
                     z_sc[train_idx]
@@ -170,20 +159,18 @@ if __name__ == "__main__":
                 optimizer2.step()
                 logging.info("Epoch %d | Loss: %.4f", epoch + 1, loss.item())
 
-            # ---------------- EVAL ---------------- #
             model_classifier.eval()
 
             with torch.no_grad():
-                logits = model_classifier(
+                logits, weights = model_classifier(
                     z_ge[test_idx],
                     z_mp[test_idx],
                     z_sc[test_idx]
                 )
-
+                logging.info("Attention Weights: %s", weights.cpu().numpy())
                 y_pred = torch.argmax(logits, dim=1).cpu().numpy()
                 y_true = cora1.y[test_idx].cpu().numpy()
 
-            # ---------------- METRICS ---------------- #
             p = precision_score(y_true, y_pred, average='macro')
             r = recall_score(y_true, y_pred, average='macro')
             f1 = f1_score(y_true, y_pred, average='macro')
@@ -206,7 +193,6 @@ if __name__ == "__main__":
                     f"ACC:{acc:.4f} ARI:{ari:.4f} MCC:{mcc:.4f}\n"
                 )
 
-        # ---------------- FINAL ---------------- #
         logging.info("========== FINAL ==========")
         logging.info("Precision: %.4f", np.mean(p_scores))
         logging.info("Recall   : %.4f", np.mean(r_scores))

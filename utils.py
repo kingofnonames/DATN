@@ -17,7 +17,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 HYPER_GENE = 0.4
 HYPER_METHY = 0.5
 HYPER_MIRNA = 0.4
-
+THRESHOLDS = np.arange(91, 100, 0.5)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def corr_x_y(x: np.ndarray, y: np.ndarray, eps=1e-8):
@@ -54,6 +54,8 @@ def mahalanobis_similarity(x: np.ndarray, y: np.ndarray, eps=1e-8, gamma=1.0):
     mahalanobis_dist = np.sqrt(np.einsum('...i,ij,...j->...', diff, inv_cov, diff))
     similarity = np.exp(-gamma * mahalanobis_dist)
     return similarity
+
+
 
 def load_data(data_path='BRCA.mat', type="BRCA"):
     data = sio.loadmat(data_path)
@@ -243,19 +245,6 @@ def build_improved_graph(
 
     # normalize_z = np.maximum(normalize_z, normalize_z.T)
     normalize_z = np.minimum(normalize_z, normalize_z.T)
-    # for i in range(len(statistic_degrees)):
-    #     degree = statistic_degrees[i]
-    #     if degree >= k_min_nearest: continue
-    #     three_most_similar = np.argsort(z_fused[i])[::-1][:k_nearest + 1]
-    #     three_most_similar = [three for three in three_most_similar if three != i and statistic_degrees[three] >= k_min_nearest]
-    #     if len(three_most_similar) == 0: 
-    #         # normalize_z[i, i] = 1
-    #         continue
-    #     number_to_add = min(k_min_nearest + 1 - degree, len(three_most_similar))
-    #     # normalize_z[three_most_similar[:number_to_add], i] = 1
-    #     normalize_z[i, three_most_similar[:number_to_add]] = 1
-    # normalize_z = np.maximum(normalize_z, normalize_z.T)
-
     logging.info("Average degree: %.2f", np.sum(normalize_z) / normalize_z.shape[0])
     logging.info ("Min degree: %d", np.min(np.sum(normalize_z, axis=1)))
     logging.info ("Max degree: %d", np.max(np.sum(normalize_z, axis=1)))
@@ -264,6 +253,8 @@ def build_improved_graph(
     logging.info("Saved adjacency matrix for %s to %s", type, f_name + f'{type}_matrix.mat')
 
     return z_pca
+
+
 
 
 def convert_csv_to_mat(data_dir, name_subtype="BRCA"):
@@ -322,7 +313,7 @@ def load_data_csv(data_folder ="./data2/BRCA_v2", save_mat_path=None):
     return features1.values, features2.values, features3.values, labels, indexes
 
 def build_percentile_graph(
-    features: np.ndraay,
+    features: np.ndarray,
     type: str = "BRCA",
     method: str = 'corr',
     f_name: str = "./data2/PER_BRCA/",
@@ -378,8 +369,84 @@ def build_percentile_graph(
     sio.savemat(f_name + f'{type}_matrix.mat', {'normalize_corr': normalize_z})
     logging.info("Saved adjacency matrix for %s to %s", type, f_name + f'{type}_matrix.mat')
 
+def get_percentile_threshold(
+    features: np.ndarray,
+    method: str = 'corr',
+    threshold_pct: float = 97.0,
+):    
+    scaler = StandardScaler()
+    normal_features = scaler.fit_transform(features)
+
+
+    sim_fn = {
+        'corr':        lambda x: np.abs(corr_x_y(x, x)),
+        'cos':         lambda x: cos_similarity(x, x),
+        'euclidean':   lambda x: euclidean_similarity(x, x),
+        'mahalanobis': lambda x: mahalanobis_similarity(x, x),
+    }.get(method)
+    if sim_fn is None:
+        raise ValueError(f"Unknown method: {method!r}. "
+                         f"Choose from: corr, cos, euclidean, mahalanobis")
+    
+    z_raw = sim_fn(normal_features)
+    z_fused = np.clip(z_raw, 0.0, 1.0)
+    off_diag = z_fused[~np.eye(z_fused.shape[0], dtype=bool)]
+
+    threshhold = np.percentile(off_diag, threshold_pct)
+    # print("Percentile threshold (%.1f%%): %.4f", threshold_pct, threshhold)
+    return threshhold
+
+def build_percentile_graph_vfinal(
+    features: np.ndarray,
+    type: str = "BRCA",
+    method: str = 'corr',
+    f_name: str = "./data2/PER_BRCA/",
+    threshold_pct: float = 97.0,
+
+):
+    os.makedirs(f_name, exist_ok=True)
+
+    scaler = StandardScaler()
+    normal_features = scaler.fit_transform(features)
+    per_thresholds = [get_percentile_threshold(normal_features, method, pct) for pct in THRESHOLDS]
+
+    sim_fn = {
+        'corr':        lambda x: np.abs(corr_x_y(x, x)),
+        'cos':         lambda x: cos_similarity(x, x),
+        'euclidean':   lambda x: euclidean_similarity(x, x),
+        'mahalanobis': lambda x: mahalanobis_similarity(x, x),
+    }.get(method)
+    if sim_fn is None:
+        raise ValueError(f"Unknown method: {method!r}. "
+                         f"Choose from: corr, cos, euclidean, mahalanobis")
+    
+    deltas = [abs((per_thresholds[0] + per_thresholds[-1]) / 2 - per_thresholds[i]) for i in range(1, len(per_thresholds))]
+    threshold_pct = THRESHOLDS[np.argmin(deltas) + 1]
+    logging.info("Selected threshold percentage: %.1f%%", threshold_pct)
+    z = sim_fn(normal_features)
+    z = np.clip(z, 0.0, 1.0)
+    off_diag = z[~np.eye(z.shape[0], dtype=bool)]
+
+    threshhold = np.percentile(off_diag, threshold_pct)
+    logging.info("Percentile threshold (%.1f%%): %.4f", threshold_pct, threshhold)
+
+    normalize_z = np.zeros_like(z, dtype=int)
+    for i in range(z.shape[0]):
+        row = z[i].copy()
+        candidates = row > threshhold
+        normalize_z[i, candidates] = 1
+    normalize_z = np.minimum(normalize_z, normalize_z.T)
+    logging.info("Average degree: %.2f", np.sum(normalize_z) / normalize_z.shape[0])
+    logging.info ("Min degree: %d", np.min(np.sum(normalize_z, axis=1)))
+    logging.info ("Max degree: %d", np.max(np.sum(normalize_z, axis=1)))
+    logging.info("Nodes with zero degree: %d", len(np.where(np.sum(normalize_z, axis=1) == 0)[0]))
+    sio.savemat(f_name + f'{type}_matrix.mat', {'normalize_corr': normalize_z})
+    logging.info("Saved adjacency matrix for %s to %s", type, f_name + f'{type}_matrix.mat')
+
+
+
 def build_weighted_graph(
-    features: np.ndrarray,
+    features: np.ndarray,
     type: str = "BRCA",
     f_name: str = "./data2/WEI_BRCA/",
     method: str = 'corr',
