@@ -24,7 +24,7 @@ from sklearn.preprocessing import label_binarize
 
 from torch_geometric.data import Data
 
-from .model.selfheco import MultiContrastLoss, MultiHeCo
+from .model.selfheco import MultiContrastLoss, MultiHeCo, MultiContrastLossFinal
 
 from .utils import set_seed, load_edges, load_weighted_edges
 logging.basicConfig(
@@ -383,14 +383,14 @@ if __name__ == "__main__":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logging.info("Using device: %s", device)
 
-        data = sio.loadmat(BASE_DIR / "GBM.mat")
+        data = sio.loadmat(BASE_DIR / "LGG.mat")
 
-        features1 = data['GBM_Gene_Expression'].T
-        features2 = data['GBM_Methy_Expression'].T
-        features3 = data['GBM_Mirna_Expression'].T
+        features1 = data['LGG_Gene_Expression'].T
+        features2 = data['LGG_Methy_Expression'].T
+        features3 = data['LGG_Mirna_Expression'].T
 
-        labels = data['GBM_clinicalMatrix'].reshape(-1)
-        indexes = data['GBM_indexes'].flatten()
+        labels = data['LGG_clinicalMatrix'].reshape(-1)
+        indexes = data['LGG_indexes'].flatten()
 
         features1 = preprocessing.scale(features1)
         features2 = preprocessing.scale(features2)
@@ -407,11 +407,11 @@ if __name__ == "__main__":
             index_methy_dict[idx] = len(index_methy_dict)
             index_mirna_dict[idx] = len(index_mirna_dict)
 
-        path = BASE_DIR / "data2" / "PER_GBM_"
+        path = BASE_DIR / "data2" / "PER_LGG_"
 
-        cites1 = path / "edges_gene_gbm.csv"
-        cites2 = path / "edges_methy_gbm.csv"
-        cites3 = path / "edges_mirna_gbm.csv"
+        cites1 = path / "edges_gene_lgg.csv"
+        cites2 = path / "edges_methy_lgg.csv"
+        cites3 = path / "edges_mirna_lgg.csv"
 
         edge_gene_index = load_edges(cites1, index_gene_dict)
         edge_methy_index = load_edges(cites2, index_methy_dict)
@@ -466,7 +466,7 @@ if __name__ == "__main__":
         dbi_scores = []
         ss_scores = []
 
-        result_path = BASE_DIR / f"final_results/sgcl/GBM/GBM_results_{seed}_contrastive.log"
+        result_path = BASE_DIR / f"final_results/sgcl/LGG/LGG_results_{seed}_contrastive.log"
         with open (result_path, "a") as f:
             f.write("Precision | Recall | F1 Score | F1 Score (Weighted) | ACC | AUC | PR AUC | ARI | MCC | DBI | SS\n")
         for fold, (train_mask, test_mask) in enumerate(kfold.split(mask, labels[mask].cpu().numpy())):
@@ -489,9 +489,12 @@ if __name__ == "__main__":
                 lr=0.001,
                 weight_decay=5e-4
             )
-            criterion = MultiContrastLoss(
-                128,
-                0.5
+            # criterion = MultiContrastLoss(
+            #     128,
+            #     0.5
+            # ).to(device)
+            criterion = MultiContrastLossFinal(
+                0.5,
             ).to(device)
             for epoch in range(100):
 
@@ -543,9 +546,6 @@ if __name__ == "__main__":
                 alpha=0.001,
                 hidden_layer_sizes=(60, 30)
             )
-            # classifier = KNeighborsClassifier(n_neighbors=5, weights='uniform', algorithm='auto', n_jobs=-1)
-            # classifier = SVC(kernel='rbf', probability=True, random_state=seed)
-            # classifier = RandomForestClassifier(n_estimators=150, random_state=seed, n_jobs=-1)
             classifier.fit(
                 embeds_train,
                 targets_train

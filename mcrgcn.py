@@ -367,14 +367,14 @@ if __name__ == '__main__':
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logging.info("Using device: %s", device)
 
-        data = sio.loadmat(BASE_DIR / "GBM.mat")
+        data = sio.loadmat(BASE_DIR / "BRCA.mat")
 
-        features1 = data['GBM_Gene_Expression'].T
-        features2 = data['GBM_Methy_Expression'].T
-        features3 = data['GBM_Mirna_Expression'].T
+        features1 = data['BRCA_Gene_Expression'].T
+        features2 = data['BRCA_Methy_Expression'].T
+        features3 = data['BRCA_Mirna_Expression'].T
 
-        labels = data['GBM_clinicalMatrix'].reshape(-1)
-        indexes = data['GBM_indexes'].flatten()
+        labels = data['BRCA_clinicalMatrix'].reshape(-1)
+        indexes = data['BRCA_indexes'].flatten()
 
         features1 = preprocessing.scale(features1)
         features2 = preprocessing.scale(features2)
@@ -391,11 +391,11 @@ if __name__ == '__main__':
             index_methy_dict[idx] = len(index_methy_dict)
             index_mirna_dict[idx] = len(index_mirna_dict)
 
-        path = BASE_DIR / "data2" / "GBM"
+        path = BASE_DIR / "data2" / "BRCA"
 
-        cites1 = path / "edges_gene_gbm.csv"
-        cites2 = path / "edges_methy_gbm.csv"
-        cites3 = path / "edges_mirna_gbm.csv"
+        cites1 = path / "edges_gene_brca.csv"
+        cites2 = path / "edges_methy_brca.csv"
+        cites3 = path / "edges_mirna_brca.csv"
 
         edge_gene_index = load_edges(cites1, index_gene_dict)
         edge_methy_index = load_edges(cites2, index_methy_dict)
@@ -450,7 +450,7 @@ if __name__ == '__main__':
         dbi_scores = []
         ss_scores = []
 
-        result_path = BASE_DIR / f"final_results/mcrgcn/GBM/GBM_results_{seed}_baseline.log"
+        result_path = BASE_DIR / f"final_results/mcrgcn/BRCA_v4/BRCA_results_{seed}_baseline.log"
         with open (result_path, "a") as f:
             f.write("Precision | Recall | F1 Score | F1 Score (Weighted) | ACC | AUC | PR AUC | ARI | MCC | DBI | SS\n")
         for fold, (train_mask, test_mask) in enumerate(kfold.split(mask, labels[mask].cpu().numpy())):
