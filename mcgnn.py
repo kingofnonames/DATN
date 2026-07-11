@@ -113,7 +113,7 @@ class GraphConvolution(nn.Module):
         super().__init__()
         self.weight = nn.Parameter(torch.empty(in_dim, out_dim))
         self.bias = nn.Parameter(torch.zeros(out_dim)) if bias else None
-        nn.xavier_uniform_(self.weight)
+        nn.init.xavier_uniform_(self.weight)
 
     def forward(self, X: torch.Tensor, L: torch.Tensor) -> torch.Tensor:
         support = X @  self.weight
