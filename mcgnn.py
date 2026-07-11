@@ -192,18 +192,21 @@ class MCgnnFull(nn.Module):
             [GCN_E(in_dim, hidden_dims, dropout) for in_dim in in_dims]
         )
         self.attention = InterViewAttention(self.num_views, feat_dim)
-        self.classfiers = nn.ModuleList(
+        self.classifiers = nn.ModuleList(
             [nn.Linear(feat_dim, num_classes) for _ in range(self.num_views)]
         )
         self.vcdn = VCDN(self.num_views, num_classes, vcdn_hidden)
 
-    def forward(self, X_list, L_list):
+    def forward(self, X_list, L_list, return_embedding=False):
         H_list = [self.encoders[v](X_list[v], L_list[v]) for v in range(self.num_views)]
         H_final, alpha = self.attention(H_list)
-        logits_list = [self.classfiers[v](H_final[v]) for v in range(self.num_views)]
+        logits_list = [self.classifiers[v](H_final[v]) for v in range(self.num_views)]
         probs_list = [F.softmax(l, dim=1) for l in logits_list]
         sig_probs = [torch.sigmoid(p) for p in probs_list]
         vcdn_logits = self.vcdn(sig_probs)
+        if return_embedding:
+            embedding = torch.cat(H_final, dim=1)
+            return logits_list, vcdn_logits, alpha, embedding
         return logits_list, vcdn_logits, alpha
     
     def param_groups(self, lr_encoder=5e-4, lr_vcdn=1e-3):
