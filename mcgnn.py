@@ -138,7 +138,7 @@ class GCN_E(nn.Module):
         for layer in self.layers:
             H = layer(H, L)
             H = self.act(H)
-            H = self.dropout(H, p=self.dropout.p, training=self.training)
+            H = self.dropout(H, p=self.dropout, training=self.training)
         return H
 
 class InterViewAttention(nn.Module):
