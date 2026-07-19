@@ -439,6 +439,7 @@ def run_experiment(view_list, y, result_path, name_file,
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
  
         for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
+            if fold < 5: continue
             metrics_test, _, _, _ = train_one_fold(
                 view_list, y, train_idx, test_idx, k=k, device=device, **train_kwargs
             )
